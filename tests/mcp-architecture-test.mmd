@@ -1,0 +1,15 @@
+flowchart LR
+    user["鈴木さん<br/>(Discord)"]
+    discord["Discord Channel"]
+    openclaw["OpenClaw Gateway<br/>(127.0.0.1:18789)"]
+    nexus["NEXUS<br/>(claude-opus-4-7)"]
+    aws["aws-mcp<br/>(uvx mcp-proxy-for-aws)"]
+    github["github-mcp<br/>(go binary, stdio)"]
+    drawio["drawio-mcp<br/>(streamable-http)"]
+
+    user --> discord
+    discord --> openclaw
+    openclaw --> nexus
+    nexus --> aws
+    nexus --> github
+    nexus --> drawio
