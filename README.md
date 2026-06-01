@@ -64,6 +64,14 @@ flowchart TD
 - [OpenClaw 公式](https://openclaw.ai/)
 - [AL2023 リリースノート](https://docs.aws.amazon.com/linux/al2023/release-notes/)
 
+## Author and Ownership / 著作権と所属について
+
+This project was created as a personal initiative and is not connected to any organization or group.
+It is published as an individual creative work.
+
+本プロジェクトは個人の活動として作成したものであり、特定の組織や団体の業務とは関係ありません。
+個人の創作物として公開しています。
+
 ## 📜 License
 
 [MIT License](LICENSE)
