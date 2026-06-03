@@ -2,7 +2,7 @@
 
 > **ステータス: 未実行（保留中）** — 本書は調査・計画の記録。実際の導入作業は行っていない。将来ブラウザ自動化が必要になった際の判断材料として残す。
 
-OpenClaw の **playwright-mcp** でブラウザ操作（ヘッドレス）を動かすために必要な OS 依存ライブラリの調査結果と、複数の作業計画をまとめる。設定そのものの解説は [playwright-mcp-setup.md](./playwright-mcp-setup.md) を参照。
+OpenClaw の **playwright-mcp** でブラウザ操作（ヘッドレス）を動かすために必要な OS 依存ライブラリの調査結果と、複数の作業計画をまとめる。設定そのものの解説は [playwright-mcp-setup.md](./006_DONE_SETUP_playwright-mcp-setup.md) を参照。
 
 ---
 
@@ -120,7 +120,7 @@ ldd ~/.cache/ms-playwright/chromium-*/chrome-linux64/chrome | grep "not found"
 
 - Playwright MCP: <https://github.com/microsoft/playwright-mcp>
 - Playwright（システム要件）: <https://playwright.dev/docs/browsers>
-- 関連手順書: [playwright-mcp-setup.md](./playwright-mcp-setup.md)
+- 関連手順書: [playwright-mcp-setup.md](./006_DONE_SETUP_playwright-mcp-setup.md)
 
 ---
 

@@ -54,7 +54,7 @@ flowchart TD
 
 ### 収録ドキュメント
 
-- **[docs/openclaw/server-initial-setup.md](docs/openclaw/server-initial-setup.md)** — AL2023 + EC2 環境で OpenClaw を稼働させるためのサーバ初期構築手順（ユーザ作成 / SSH / Node.js 24.x / Swap / Claude Code / OpenClaw インストールまで）
+- **[docs/openclaw/001_DONE_SETUP_server-initial-setup.md](docs/openclaw/001_DONE_SETUP_server-initial-setup.md)** — AL2023 + EC2 環境で OpenClaw を稼働させるためのサーバ初期構築手順（ユーザ作成 / SSH / Node.js 24.x / Swap / Claude Code / OpenClaw インストールまで）
 - **[tests/mcp-architecture-test.md](tests/mcp-architecture-test.md)** — drawio-mcp 動作確認時の構成図と検証ログ
 - **[tests/mcp-architecture-test.mmd](tests/mcp-architecture-test.mmd)** — 上記の Mermaid 原本
 
