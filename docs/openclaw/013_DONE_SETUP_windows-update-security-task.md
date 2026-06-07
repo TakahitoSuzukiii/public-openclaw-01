@@ -51,7 +51,7 @@ flowchart TD
     SCRIPT -->|公式API| UPD["/cvrf/v3.0/updates<br/>月次リリース一覧"]
     SCRIPT -->|最新月のCVRF取得| DOC["/cvrf/v3.0/cvrf/&lt;ID&gt;"]
     SCRIPT -->|参照| SNAP[("snapshots/<br/>processed-months.json")]
-    SCRIPT -->|出力(圧縮サマリ)| DIFF["out/latest-diff.json"]
+    SCRIPT -->|出力（圧縮サマリ）| DIFF["out/latest-diff.json"]
     AGENT -->|2. 読込| DIFF
     AGENT -->|3. 記事生成 日本語| MD["Markdown 記事"]
     MD -->|4a. ローカル保存| MASTER[("/opt/docs/openclaw-news/<br/>info/security/windows-update/")]
