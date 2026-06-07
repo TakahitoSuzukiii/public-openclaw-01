@@ -78,6 +78,7 @@ flowchart TD
 | 008 | [security-remote-access](docs/openclaw/008_INFO_SEC_security-remote-access.md) | リモートアクセスのセキュリティ検討 |
 | 009 | [weekly-github-trending-task](docs/openclaw/009_DONE_SETUP_weekly-github-trending-task.md) | 週次 GitHub トレンド記事タスクの構築手順 |
 | 010 | [gemini-fallback](docs/openclaw/010_DONE_SETUP_gemini-fallback.md) | Claude 障害時に Gemini（無料枠）へ自動フォールバックする構成の構築手順 |
+| 011 | [fallback-notify](docs/openclaw/011_DONE_SETUP_fallback-notify.md) | Claude→fallback 切替の発生を Discord へ即時通知する常駐サービスの構築手順 |
 
 #### docs/info/news/（情報記事）
 
