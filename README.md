@@ -79,6 +79,7 @@ flowchart TD
 | 009 | [weekly-github-trending-task](docs/openclaw/009_DONE_SETUP_weekly-github-trending-task.md) | 週次 GitHub トレンド記事タスクの構築手順 |
 | 010 | [gemini-fallback](docs/openclaw/010_DONE_SETUP_gemini-fallback.md) | Claude 障害時に Gemini（無料枠）へ自動フォールバックする構成の構築手順 |
 | 011 | [fallback-notify](docs/openclaw/011_DONE_SETUP_fallback-notify.md) | Claude→fallback 切替の発生を Discord へ即時通知する常駐サービスの構築手順 |
+| 012 | [al2023-security-task](docs/openclaw/012_DONE_SETUP_al2023-security-task.md) | AL2023 セキュリティアドバイザリを日次監視し docs/info/security へ要約記事を公開するタスクの構築手順 |
 
 #### docs/info/news/（情報記事）
 
@@ -93,6 +94,7 @@ flowchart TD
 | 2026-06-07 | [claude-code](docs/info/news/20260607_INFO_CLAUDE_claude-code.md) | ターミナル常駐のエージェント型コーディングツール |
 
 > `docs/info/news/` は毎週土曜 06:30 JST の自動タスクで追記されます（構築手順は 009 を参照）。
+> `docs/info/security/` は毎日 07:02 JST の自動タスクで追記されます（AL2023 の新規 Critical/Important のみ。構築手順は 012 を参照）。
 
 #### tests/（動作確認）
 
