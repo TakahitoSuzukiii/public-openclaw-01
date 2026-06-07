@@ -1,17 +1,17 @@
 # AL2023 セキュリティアドバイザリ 日次監視タスク 構築手順
 
 > STATUS: DONE / CATEGORY: SETUP / 作成日: 2026-06-07
-> Amazon Linux 2023(AL2023) の公式セキュリティアドバイザリ(ALAS)を毎日チェックし、新規の Critical/Important を要約して `docs/info/security/` へ公開＋Discord 通知するタスクの構築手順です。[[009_DONE_SETUP_weekly-github-trending-task]] をベースに設計。
+> Amazon Linux 2023(AL2023) の公式セキュリティアドバイザリ(ALAS)を毎日チェックし、新規の Critical/Important を要約して `docs/info/security/al2023/` へ公開＋Discord 通知するタスクの構築手順です。[[009_DONE_SETUP_weekly-github-trending-task]] をベースに設計。
 
 ## 0. 概要（何をするタスクか）
 
-毎日 **07:02 JST** に自動実行され、次を行います。
+毎日 **06:10 JST** に自動実行され、次を行います。
 
 1. AWS 公式 **ALAS RSS フィード**から AL2023 のセキュリティアドバイザリ一覧を取得
 2. 前回保存した「スナップショット（既知の ALAS ID 一覧）」と比較し、**新規アドバイザリ**を抽出
 3. 新規のうち **Critical / Important** の詳細ページから概要・対象パッケージ・CVE を取得
 4. 日本語の要約記事（Markdown）を生成
-5. ドキュメント公開リポジトリの `docs/info/security/` へ push
+5. ドキュメント公開リポジトリの `docs/info/security/al2023/` へ push
 6. Discord に「作成・push した旨 ＋ 要約の要約」を通知
 
 > 用語: **ALAS** … Amazon Linux Security Center。Amazon Linux のセキュリティ修正情報（アドバイザリ）の公式公開先。`ALAS2023-YYYY-NNNN` の ID で管理。
@@ -27,7 +27,7 @@
 
 ```mermaid
 flowchart TD
-    CRON["OpenClaw cron<br/>毎日 07:02 JST"] -->|wake| AGENT["isolated エージェント<br/>agentTurn"]
+    CRON["OpenClaw cron<br/>毎日 06:10 JST"] -->|wake| AGENT["isolated エージェント<br/>agentTurn"]
     AGENT -->|1. 実行| SCRIPT["fetch-alas.mjs<br/>データ層"]
     SCRIPT -->|公式RSS購読| ALAS["ALAS RSS<br/>alas.aws.amazon.com"]
     SCRIPT -->|2. 詳細取得 critical/important| DETAIL["各アドバイザリ詳細ページ"]
@@ -35,8 +35,8 @@ flowchart TD
     SCRIPT -->|出力| DIFF["out/latest-diff.json"]
     AGENT -->|3. 読込| DIFF
     AGENT -->|4. 記事生成 日本語| MD["Markdown 記事"]
-    MD -->|5a. ローカル保存| MASTER[("/opt/docs/.../info/security/")]
-    MD -->|5b. push| REPO["GitHub: docs/info/security/"]
+    MD -->|5a. ローカル保存| MASTER[("/opt/docs/.../info/security/al2023/")]
+    MD -->|5b. push| REPO["GitHub: docs/info/security/al2023/"]
     AGENT -->|6. 通知 要約の要約| DISCORD["Discord"]
 ```
 
@@ -100,7 +100,7 @@ mkdir -p ~/.openclaw/workspace/tasks/al2023-security/snapshots \
 | 項目 | 値 |
 |---|---|
 | name | `daily-al2023-security` |
-| schedule | `{ kind: cron, expr: "2 7 * * *", tz: "Asia/Tokyo" }` |
+| schedule | `{ kind: cron, expr: "10 6 * * *", tz: "Asia/Tokyo" }` |
 | sessionTarget | `isolated` |
 | payload.kind | `agentTurn` |
 | payload.model | `anthropic/claude-opus-4-8` |
@@ -108,13 +108,13 @@ mkdir -p ~/.openclaw/workspace/tasks/al2023-security/snapshots \
 | delivery | `{ mode: announce, channel: discord, to: user:<DISCORD_USER_ID> }` |
 | failureAlert | `{ mode: announce, channel: discord, to: user:<DISCORD_USER_ID>, after: 1 }`（1回失敗で通知） |
 
-> `expr "2 7 * * *"` は「分 時 日 月 曜日」で **毎日 07:02**。:00 ちょうどは負荷集中しやすいため数分ずらす運用（009 と同方針）。`tz` を付けると JST 壁時計でそのまま指定可。
+> `expr "10 6 * * *"` は「分 時 日 月 曜日」で **毎日 06:10**。`tz` を付けると JST 壁時計でそのまま指定可。
 > `payload.message` にタスク全手順を日本語で自己完結的に記述（フィード実行 → latest-diff.json 読込 → 分岐 → 記事生成 → push → 要約の要約を通知）。
 
 ## 7. 公開先と命名規則
 
-- **ローカルマスター**: `/opt/docs/openclaw-news/info/security/`
-- **GitHub**: `TakahitoSuzukiii/public-openclaw-01` の **`master`** ブランチ `docs/info/security/`
+- **ローカルマスター**: `/opt/docs/openclaw-news/info/security/al2023/`
+- **GitHub**: `TakahitoSuzukiii/public-openclaw-01` の **`master`** ブランチ `docs/info/security/al2023/`
 - **ファイル名**: `YYYYMMDD_INFO_ALAS_al2023-security.md`
   - `docs/info/` 命名規則 `YYYYMMDD_STATUS_TOPIC_title` に準拠（STATUS=INFO, TOPIC=ALAS）。
 
@@ -134,6 +134,7 @@ node fetch-alas.mjs
 - パース品質 OK（ID・重大度・パッケージ・日付・CVE・リンクを正しく抽出）。
 - 合成 prior による差分テスト OK（新規 6 件を検知、critical/important の詳細ページから概要・CVE を取得）。
 - baseline スモークテスト（cron force run）で isolated エージェントの疎通・Discord 通知を確認。
+- 初回テストとして、現時点で Critical に分類されている全 12 件を棚卸しした記事を作成・push 済み（`docs/info/security/al2023/20260607_INFO_ALAS_al2023-security.md`）。
 
 ## 9. 運用・メンテナンス
 
