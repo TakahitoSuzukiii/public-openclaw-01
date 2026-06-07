@@ -166,7 +166,7 @@ node fetch-msrc.mjs
 - 検証（May 2026）: 要更新適用(Windows/オンプレ)=4（ALDO/Dynamics365/Netlogon/DNS Client）、Azure クラウド(参考)=9（Logic Apps 含む）、Azure Linux/OSS=9（件数のみ）、Exploitation More Likely=18、ゼロデイ=3。
 
 ### 重複 cron ジョブの整理（2026-06-07）
-- 別ジョブ `windows-update-security-summary`（id `99d8dc07…`、main セッション・汎用プロンプト・同一スケジュール `3#2`）が混入していた（NEXUS 作成の正規ジョブ `monthly-windows-update-security` `6989cfac…` と重複）。dedup を参照しない汎用プロンプトで二重投稿リスクがあるため**無効化**（enabled=false）。削除可否は鈴木さん確認待ち。
+- 別ジョブ `windows-update-security-summary`（id `99d8dc07…`、main セッション・汎用プロンプト・同一スケジュール `3#2`）が混入していた（NEXUS 作成の正規ジョブ `monthly-windows-update-security` `6989cfac…` と重複）。dedup を参照しない汎用プロンプトで二重投稿リスクがあるため、まず**無効化**し、鈴木さんの承認を得て **2026-06-07 に完全削除**（`cron action=remove`）。現存する cron は正規3件（daily-al2023-security / monthly-windows-update-security / weekly-github-trending）のみ。
 
 ## 9. 運用・メンテナンス
 
