@@ -23,14 +23,14 @@
 
 ```mermaid
 flowchart TD
-    GW["OpenClaw Gateway"] -->|フォールバック判断を記録| LOG["gateway ログ<br/>(model_fallback_decision)"]
-    SVC["openclaw-fallback-notify.service<br/>(systemd user)"] -->|openclaw logs --follow --json| LOG
+    GW["OpenClaw Gateway"] -->|フォールバック判断を記録| LOG["gateway ログ<br/>model_fallback_decision"]
+    SVC["openclaw-fallback-notify.service<br/>systemd user"] -->|openclaw logs --follow --json| LOG
     SVC --> D1{"finalOutcome ?"}
-    D1 -->|next_fallback| T1{"切替: 10分<br/>スロットル"}
-    D1 -->|chain_exhausted<br/>(fallbackConfigured:true)| T2{"全滅: 10分<br/>スロットル"}
+    D1 -->|next_fallback| T1{"切替: 10分スロットル"}
+    D1 -->|chain_exhausted / configured:true| T2{"全滅: 10分スロットル"}
     T1 -->|送信| M1["⚠️ 切替通知"]
     T2 -->|送信| M2["🛑 全滅通知"]
-    M1 --> DISCORD["Discord (NEXUS チャット)"]
+    M1 --> DISCORD["Discord NEXUS チャット"]
     M2 --> DISCORD
 ```
 
