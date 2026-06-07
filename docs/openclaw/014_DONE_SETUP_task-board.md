@@ -50,7 +50,7 @@ flowchart TD
     DB --> SRV["server.mjs<br/>node:http 127.0.0.1:18790"]
     SRV --- SERVE["tailscale serve<br/>HTTPS tailnet限定"]
     SERVE -->|ブラウザ| DEV["スマホ / PC<br/>同一tailnet"]
-    DEV -->|カード操作 / フィルタ / ソート / 優先度 / 追加指示| SRV
+    DEV -->|カード操作 / フィルタ / ソート / 優先度 / 追加指示 / スワイプ| SRV
     SRV -->|状態更新| DB
 ```
 
@@ -66,7 +66,7 @@ flowchart TD
 | awaiting_completion | 完了待ち | 実行が完了し完了待ち |
 | reviewing | 確認中 | 危険操作要・曖昧・エラー等で要確認 |
 | on_hold | 保留 | 一時停止 |
-| cancelled / done | 取消 / 完了 | 終端 |
+| cancelled / done | 取消 / 完了 | 終端（7日後に自動削除） |
 
 ```mermaid
 stateDiagram-v2
@@ -100,10 +100,10 @@ stateDiagram-v2
 
 ```
 ~/.openclaw/workspace/tasks/task-board/
-├── db.mjs              # データ層（node:sqlite, stage列, 優先度/追記ヘルパ）
+├── db.mjs              # データ層（node:sqlite, stage列, 優先度/追記/自動削除ヘルパ）
 ├── taskctl.mjs         # CLI（add --json-file / list / show / set-status[--stage] / priority / append-instruction / log / next-queued --stage）
-├── server.mjs          # API＋ダッシュボード配信（node:http, 127.0.0.1:18790）
-├── public/index.html   # カードUI（フィルタ/ソート/優先度編集/展開詳細/追加指示, 素のJS）
+├── server.mjs          # API＋ダッシュボード配信（node:http, 127.0.0.1:18790）＋自動削除
+├── public/index.html   # カードUI（フィルタ/ソート/優先度編集/展開詳細/追加指示/レスポンシブ/スワイプ, 素のJS）
 └── data/tasks.db       # SQLite 実体（実行時生成・git管理しない）
 ```
 
@@ -115,7 +115,7 @@ stateDiagram-v2
 
 API（`server.mjs`, loopback 限定）:
 - `GET /` ダッシュボード / `GET /api/tasks` 一覧＋ラベル / `GET /api/tasks/:id` 詳細＋ログ
-- `POST /api/tasks` 作成
+- `POST /api/tasks` 作成（`dummy` 指定可）
 - `POST /api/tasks/:id/action` 遷移 `{action}`:
   - `approve→queued/stage=exec`（承認=実行待ち再キュー）, `finish_exec→awaiting_completion`, `review→reviewing`, `complete→done`, `hold→on_hold`, `resume→queued`, `cancel→cancelled`, `revert→awaiting_approval/stage=intake`（差し戻し）
 - `POST /api/tasks/:id/priority` `{priority}`（優先度編集）
@@ -131,6 +131,13 @@ API（`server.mjs`, loopback 限定）:
 - **フィルタ**（手動追加の下）: 状態（複数選択チェック）／テキスト検索（タイトル・最新ログ）／優先度しきい値。
 - **ソート**: 優先度 / 更新日時 / 作成日時 / 状態 / ID × 昇降。
 - フィルタ/ソートはクライアント側。カード展開中・入力中は自動更新を抑止（操作の巻き戻り防止）。4秒間隔で自動更新。
+- **レスポンシブ**: 640px 以下でカード1列・タップ領域拡大に最適化（スマホ対応）。
+- **スワイプ操作（スマホ）**: カードを **右スワイプ＝その状態の主アクション（承認/実行完了/完了/再開）**、**左スワイプ＝削除（取消）**。閾値80px、ボタン/入力上では無効、縦スクロール優先。
+
+## 5.1 保持期間（自動削除）
+
+- **完了(done)・取消(cancelled)** のタスクは **7日間保持 → 自動削除**（物理削除＋ログ削除）。
+- 実装: 常駐サービス `server.mjs` が起動時＋1時間毎に `purgeOld(RETENTION_DAYS)` を実行（`TASKBOARD_RETENTION_DAYS`、既定7）。LLM コストゼロ。
 
 ## 6. ポーラ／エグゼキュータ（OpenClaw cron）
 
@@ -155,6 +162,7 @@ Restart=on-failure
 Environment=NODE_NO_WARNINGS=1
 Environment=TASKBOARD_HOST=127.0.0.1
 Environment=TASKBOARD_PORT=18790
+Environment=TASKBOARD_RETENTION_DAYS=7
 [Install]
 WantedBy=default.target
 ```
@@ -187,7 +195,8 @@ sudo tailscale serve status
 
 - Phase1: 優先度付きFIFO／状態遷移／API／配信／注入安全／intake E2E／承認→実行中、すべて OK。Tailscale Serve でスマホ・PC アクセス確認。
 - Phase2: stage マイグレーション OK。`approve→queued/exec` 再キュー、優先度編集、コメント/追撃指示/再キュー/差し戻し、stage別 next-queued、すべて OK。**エグゼキュータ E2E**: 安全な read-only タスク（date/uptime/df）を実行→`result` 要約→`awaiting_completion`＋通知を確認。安全ルール（外部/破壊は reviewing 停止）組込み。
-- ダミー: `is_dummy` でダミー10件投入 → intake をサイレント（通知なし・実処理なし）で `承認待ち` まで前進を確認。
+- ダミー: `is_dummy` でダミー10件投入 → intake をサイレント（通知なし・実処理なし）で『承認待ち』まで前進を確認。
+- 自動削除: 8日前の done を `purgeOld(7)` が削除、1日前の done は保持を確認。レスポンシブ/スワイプ要素のページ配信も確認。
 
 ## 11. 運用・トラブルシュート（抜粋）
 
