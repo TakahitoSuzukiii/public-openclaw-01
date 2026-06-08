@@ -30,7 +30,7 @@
 - 機密（トークン/パスワード等）は本文に書かない（検知時は登録拒否）。
 
 ### B. ダッシュボード画面から（手動追加）
-1. ブラウザでダッシュボード `https://<hostname>.<tailnet>.ts.net/` を開く。
+1. ブラウザでタスクボード `https://<hostname>.<tailnet>.ts.net/dashboard` を開く（ホームは `/`）。
 2. 最上部「手動でタスク追加」に入力:
    - **タイトル**（必須）／**詳細・指示**／**優先度**（数値・大きいほど先）
    - **🧪ダミー（テスト用・実処理しない）** にチェックするとダミータスクになる
@@ -47,10 +47,10 @@ flowchart TD
     SKILL -->|cron run force| POLL["cron taskboard-poller<br/>isolated エージェント<br/>intake段 + exec段"]
     POLL -->|next-queued / set-status / 実処理| DB
     POLL -->|処理・実行時のみ Discord 通知| U
-    DB --> SRV["server.mjs<br/>node:http 127.0.0.1:18790"]
+    DB --> SRV["server.mjs<br/>node:http 127.0.0.1:18790<br/>/ =ホーム /dashboard =ボード"]
     SRV --- SERVE["tailscale serve<br/>HTTPS tailnet限定"]
     SERVE -->|ブラウザ| DEV["スマホ / PC<br/>同一tailnet"]
-    DEV -->|カード操作 / フィルタ / ソート / 優先度 / 追加指示 / スワイプ| SRV
+    DEV -->|カード操作 / フィルタ / ソート / 優先度 / 追加指示| SRV
     SRV -->|状態更新| DB
 ```
 
@@ -100,10 +100,11 @@ stateDiagram-v2
 
 ```
 ~/.openclaw/workspace/tasks/task-board/
-├── db.mjs              # データ層（node:sqlite, stage列, 優先度/追記/自動削除ヘルパ）
+├── db.mjs              # データ層（node:sqlite, stage列, 優先度/追記ヘルパ）
 ├── taskctl.mjs         # CLI（add --json-file / list / show / set-status[--stage] / priority / append-instruction / log / next-queued --stage）
-├── server.mjs          # API＋ダッシュボード配信（node:http, 127.0.0.1:18790）＋自動削除
-├── public/index.html   # カードUI（フィルタ/ソート/優先度編集/展開詳細/追加指示/レスポンシブ/スワイプ/M3, 素のJS）
+├── server.mjs          # API＋画面配信（node:http, 127.0.0.1:18790, / と /dashboard, /api/home）
+├── public/home.html    # ホーム画面（/ ・システム情報/cron状況/タスク集計/ボード遷移ボタン）
+├── public/index.html   # タスクボード（/dashboard ・カードUI/フィルタ/ソート/優先度編集/展開詳細/追加指示/レスポンシブ/スワイプ/M3）
 └── data/tasks.db       # SQLite 実体（実行時生成・git管理しない）
 ```
 
@@ -113,9 +114,13 @@ stateDiagram-v2
   - `is_dummy=1` … ダミー（テスト用）。エグゼキュータは実処理・通知をせず状態のみ進める。
 - 優先度付き FIFO（stage別）: `WHERE status='queued' AND stage=? ORDER BY priority DESC, id ASC`。
 
+画面ルーティング:
+- `GET /` … **ホーム画面**（home.html）。`GET /dashboard`（=`/index.html`）… **タスクボード**（index.html）。
+- `GET /api/home` … ホーム用情報（OpenClawバージョン・Claudeモデル・Node・cron状況・タスク集計）。30秒キャッシュ。Gateway/LLM 非依存（`openclaw cron list --json --all` ＋ファイル読取り）。機密は含めない。
+
 API（`server.mjs`, loopback 限定）:
-- `GET /` ダッシュボード / `GET /api/tasks` 一覧＋ラベル / `GET /api/tasks/:id` 詳細＋ログ
-- `POST /api/tasks` 作成（`dummy` 指定可）
+- `GET /api/tasks` 一覧＋ラベル / `GET /api/tasks/:id` 詳細＋ログ
+- `POST /api/tasks` 作成
 - `POST /api/tasks/:id/action` 遷移 `{action}`:
   - `approve→queued/stage=exec`（承認=実行待ち再キュー）, `finish_exec→awaiting_completion`, `review→reviewing`, `complete→done`, `hold→on_hold`, `resume→queued`, `cancel→cancelled`, `revert→awaiting_approval/stage=intake`（差し戻し）
 - `POST /api/tasks/:id/priority` `{priority}`（優先度編集）
@@ -134,13 +139,24 @@ API（`server.mjs`, loopback 限定）:
 - **デザイン**: Material 3 Expressive 風（ダーク・トナルカラーロール・大角丸28px・ピル型ボタン・状態別トナルチップ・スプリング的モーション）。外部フォント/CSS 依存なし（素のCSSのみ）。
 - **レスポンシブ**: 640px 以下でカード1列・タップ領域拡大に最適化（スマホ対応）。
 - **スワイプ操作（スマホ）**: カードを **右スワイプ＝その状態の主アクション（承認/実行完了/完了/再開）**、**左スワイプ＝削除（取消）**。閾値80px、ボタン/入力上では無効、縦スクロール優先。
+- ヘッダーに **「🏠 ホーム」リンク**（`/` へ）。
 
 ## 5.1 保持期間（自動削除）
 
 - **完了(done)・取消(cancelled)** のタスクは **7日間保持 → 自動削除**（物理削除＋ログ削除）。
 - 実装: 常駐サービス `server.mjs` が起動時＋1時間毎に `purgeOld(RETENTION_DAYS)` を実行（`TASKBOARD_RETENTION_DAYS`、既定7）。LLM コストゼロ。
 
+## 5.2 ホーム画面（`/`）
+
+- `/`（`home.html`）はNEXUSのホーム。**「🔗 NEXUS タスクボードを開く」ボタン**で `/dashboard` へ遷移。
+- 掲載情報（`/api/home`・30秒キャッシュ・Gateway/LLM 非依存）:
+  - **システム情報**: OpenClaw バージョン（`package.json`）/ Claude モデル primary＋fallback（`openclaw.json`）/ Node バージョン。
+  - **定期タスク（cron）状況**: 各ジョブの 有効/停止・前回ステータス・前回/次回実行時刻・連続エラー数（`openclaw cron list --json --all` を `server.mjs` が実行して取得。`openclaw` は絶対パス指定）。
+  - **タスクボード サマリ**: 状態別の件数と合計。
+
 ## 6. ポーラ／エグゼキュータ（OpenClaw cron）
+
+> ⚠️ **2026-06-08 現在、`taskboard-poller` はコスト対策のため停止中（enabled=false）**。アイドルでも10分毎に Opus 起動しトークンを浪費していたため。再設計方針はローカル記録 `015_TODO_PLAN_taskboard-poller-cost-redesign.md`（保留・GitHub非公開）。以下は停止前の仕様。
 
 `taskboard-poller`（isolated agentTurn, model opus, timeout 1200, delivery=none）。schedule `*/10 * * * *` (Asia/Tokyo)。`/create-apt` が投入時に `cron run force` で即キック。
 
@@ -163,7 +179,6 @@ Restart=on-failure
 Environment=NODE_NO_WARNINGS=1
 Environment=TASKBOARD_HOST=127.0.0.1
 Environment=TASKBOARD_PORT=18790
-Environment=TASKBOARD_RETENTION_DAYS=7
 [Install]
 WantedBy=default.target
 ```
@@ -177,7 +192,7 @@ systemctl --user restart openclaw-taskboard.service   # コード更新後
 - スラッシュコマンド＝スキル。`/create-apt` の本文をタスク化 → ポーラ即キック。本文は Write ツールで一時 JSON 化 → `taskctl add --json-file`（シェル注入回避）。
 - Skill Workshop で提案作成 → `openclaw skills workshop apply <proposal-id>` で live 化（適用済み）。
 
-## 9. ダッシュボードのアクセス（Tailscale Serve）
+## 9. アクセス（Tailscale Serve）
 
 ```bash
 sudo dnf install -y dnf-plugins-core
@@ -188,16 +203,18 @@ sudo tailscale up                  # 表示URLをブラウザ認証
 sudo tailscale serve --bg 18790    # tailnet内だけにHTTPS公開
 sudo tailscale serve status
 ```
+- **URL（tailnet 限定）**: ホーム `https://<hostname>.<tailnet>.ts.net/` / タスクボード `https://<hostname>.<tailnet>.ts.net/dashboard`。閲覧端末にも Tailscale を入れ同一アカウントでログイン。
 - 管理コンソールで **HTTPS certificates 有効化**（必須）。**Funnel は無効**（インターネット非公開）。
-- 公開URL（tailnet 限定）: `https://<hostname>.<tailnet>.ts.net/`。閲覧端末にも Tailscale を入れ同一アカウントでログイン。
-- 代替: `ssh -N -L 18790:127.0.0.1:18790 <server>` → `http://127.0.0.1:18790`。
+- 代替: `ssh -N -L 18790:127.0.0.1:18790 <server>` → `http://127.0.0.1:18790/`（ホーム）/ `/dashboard`（ボード）。
 
-## 10. 検証結果（2026-06-07）
+## 10. 検証結果（2026-06-07〜08）
 
 - Phase1: 優先度付きFIFO／状態遷移／API／配信／注入安全／intake E2E／承認→実行中、すべて OK。Tailscale Serve でスマホ・PC アクセス確認。
 - Phase2: stage マイグレーション OK。`approve→queued/exec` 再キュー、優先度編集、コメント/追撃指示/再キュー/差し戻し、stage別 next-queued、すべて OK。**エグゼキュータ E2E**: 安全な read-only タスク（date/uptime/df）を実行→`result` 要約→`awaiting_completion`＋通知を確認。安全ルール（外部/破壊は reviewing 停止）組込み。
 - ダミー: `is_dummy` でダミー10件投入 → intake をサイレント（通知なし・実処理なし）で『承認待ち』まで前進を確認。
-- 自動削除: 8日前の done を `purgeOld(7)` が削除、1日前の done は保持を確認。レスポンシブ/スワイプ要素のページ配信も確認。
+- 自動削除: 8日前の done を `purgeOld(7)` が削除、1日前の done は保持を確認。
+- 画面分離: `/`＝ホーム（システム情報/cron状況/タスク集計/ボタン）、`/dashboard`＝ボードを確認。`/api/home` がバージョン・cron状況・集計を返すことを確認。
+- コスト: `taskboard-poller` のアイドル課金が判明 → 停止（enabled=false）。再設計は保留（015）。
 
 ## 11. 運用・トラブルシュート（抜粋）
 
@@ -206,20 +223,19 @@ sudo tailscale serve status
 - 同じ exec タスクの二重実行防止: 取得直後に `executing` へ遷移（クレーム）。
 - カードが更新されない: `journalctl --user -u openclaw-taskboard` / `GET /api/tasks`。
 - 投入が反映されない: `/create-apt` が apply 済みか（`openclaw skills list`）。
-- 実行が進まない: cron `taskboard-poller` が enabled か（`cron runs <id>`）。承認後は最大10分待ち。
+- ホームの cron 状況が「取得失敗」: `openclaw` 絶対パス／gateway 稼働を確認（`GET /api/home`）。
 - `serve` で HTTPS 無効: 管理コンソールで有効化後に再実行。
 
 ## 12. セキュリティ / マスキング
 
-- ダッシュボードは loopback 限定＋Tailscale Serve（tailnet 限定・HTTPS）。Funnel 無効。
-- エグゼキュータは外部/破壊操作をせず `reviewing` 停止（AGENTS.md/HITL）。機密は DB・ログ・result・タスク本文に保存しない（`/create-apt` は検知時に登録拒否）。
+- 画面は loopback 限定＋Tailscale Serve（tailnet 限定・HTTPS）。Funnel 無効。
+- エグゼキュータは外部/破壊操作をせず `reviewing` 停止（AGENTS.md/HITL）。機密は DB・ログ・result・タスク本文・`/api/home` に保存/露出しない（`/create-apt` は検知時に登録拒否）。
 - 固有値はマスキング: `<hostname>`, `<tailnet>.ts.net`, `<your-user>`, `<discord-user-id>`, `<poller-job-id>`。実値は鈴木さん手元で管理。
 
 ## 13. 今後（Phase3 候補）
 
-- 承認時の即時実行キック（レイテンシ短縮）。
+- **taskboard-poller のコスト再設計**（保留・015）: intake 非LLM化＋承認イベントで exec 起動（アイドル課金ゼロ）。
 - reviewing からの「続行承認」で中断ポイント再開（現状は再キューで先頭から）。
-- アイドル時コストを下げる常駐ワーカー化（LLM 起動を作業時のみに）。
 - タスクの依存関係・サブタスク、添付・成果物リンク。
 
 ---
