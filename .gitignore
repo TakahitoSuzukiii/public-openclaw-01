@@ -1,0 +1,26 @@
+# ===== OpenClaw ワークスペース個人ファイル（公開リポジトリへ含めない） =====
+# このリポジトリのワーキングツリーは OpenClaw のワークスペースを兼ねているため、
+# 個人設定・記憶・タスク等の非公開ファイルを明示的に除外する。
+# 公開対象は docs/ ・ tests/ ・ README.md ・ LICENSE のみ。
+
+# エージェント定義 / 人格 / ユーザ情報（個人情報を含む）
+/AGENTS.md
+/SOUL.md
+/USER.md
+/IDENTITY.md
+/MEMORY.md
+/HEARTBEAT.md
+/TOOLS.md
+
+# 記憶・タスク・スキル・ランタイム
+/memory/
+/tasks/
+/skills/
+/.openclaw/
+/.openclaw-cli-images/
+/.playwright-mcp/
+
+# 一時生成物・スクリーンショット等
+/card31.png
+/taskboard-buttons.png
+*.tmp
