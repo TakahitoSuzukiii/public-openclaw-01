@@ -12,7 +12,8 @@
 - openclaw は **gateway サービスのプロセス内（＝OpenClaw cron の agentTurn 内）からは update 不可**。
   - 二段ガード: ①env `OPENCLAW_SERVICE_MARKER=openclaw` 判定、②gateway PID が祖先プロセスかの判定。
 - そのため #16（claude）と違い OpenClaw cron 方式は使えず、**gateway の外で動く systemd user タイマー**で実装。
-- 構成: **systemd user timer/service（毎週金 06:20 JST）が update を実行** → 更新があった時のみ gateway 再起動 → **別の OpenClaw cron（毎週金 06:30 JST）が結果を Discord 通知**。
+- 構成: **systemd user timer/service（毎週金 06:20 JST）が update を実行（--no-restart）** → **別の OpenClaw cron（毎週金 06:30 JST）が結果を Discord 通知し、更新があった時のみ「事前通知してから」gateway を再起動**。
+- 方針（2026-06-11）: **gateway 再起動の前は必ず Discord で事前通知**する。よって再起動は systemd スクリプトではなく通知 cron が「通知→約15秒後に再起動」の順で行う。
 - 即時実行テスト成功: 現在最新（2026.6.5）のため `up-to-date`・再起動なしを確認。更新検出時の再起動経路も実機確認済み。
 - sudo 不要（すべて user 権限。`systemctl --user`、Linger=yes 済み）。
 
@@ -39,25 +40,28 @@ safely stop or restart the gateway that owns it.
 | `~/.openclaw/scripts/openclaw-autoupdate.sh` | 更新実行スクリプト（gateway 外前提）。結果を JSON 出力 |
 | `~/.config/systemd/user/openclaw-autoupdate.service` | oneshot サービス。スクリプトを実行（gateway マーカー env を持たない） |
 | `~/.config/systemd/user/openclaw-autoupdate.timer` | 毎週金 06:20 JST に service を起動 |
-| OpenClaw cron `weekly-openclaw-autoupdate-notify` | 毎週金 06:30 JST。結果 JSON を読んで Discord 通知 |
+| OpenClaw cron `weekly-openclaw-autoupdate-notify` | 毎週金 06:30 JST。結果 JSON を読んで Discord 通知＋（更新時のみ）事前通知→再起動 |
 | `~/.openclaw/state/openclaw-autoupdate-last.json` | 直近結果（ts/before/after/status/rc） |
 
 ### スクリプトの動作
 1. `openclaw --version`（before）
 2. `openclaw update --yes --no-restart`（env から gateway マーカーを除去して実行＝二重防御。まず再起動せず更新のみ適用）
 3. `openclaw --version`（after）
-4. 判定: rc≠0→`failed` / before≠after→`updated`（**この時だけ** `systemctl --user restart openclaw-gateway.service`）/ 同一→`up-to-date`（再起動しない）
+4. 判定: rc≠0→`failed` / before≠after→`updated` / 同一→`up-to-date`。**スクリプトは再起動しない**（再起動は事前通知のため通知 cron が担当）
 5. 結果 JSON を state ファイルへ書き出し（バージョン文字列のみ。update 詳細出力は機密混入回避のため保存しない）
 
-> 設計意図: 「更新があった週だけ gateway を再起動」。最新の週は無駄な再起動をしない。
+> 設計意図: 「更新があった週だけ gateway を再起動」。最新の週は無駄な再起動をしない。さらに **再起動の前に必ず Discord 事前通知**するため、再起動はスクリプトではなく通知 cron（通知→約15秒後に再起動）が行う。
 
 ### systemd timer（タイムゾーン）
 - ホストは UTC 運用。systemd 252+ は OnCalendar に IANA タイムゾーン指定可。
 - `OnCalendar=Fri *-*-* 06:20:00 Asia/Tokyo`（= Thu 21:20 UTC）。`Persistent=true`。
 
-### 通知の分離（なぜ別 cron か）
+### 通知・再起動の分離（なぜ別 cron か）
 - update は gateway 外で実行する必要があり、Discord 通知は OpenClaw（gateway 内）経由でしか送れない（外部 curl での provider 送信は禁止）。
-- → 役割分担: **systemd が更新**、**OpenClaw cron が通知**。06:20 更新／06:30 通知で、更新時の gateway 再起動（実測 約2〜3分）後に通知が走るよう余裕を確保。
+- → 役割分担: **systemd が更新（--no-restart）**、**OpenClaw cron が通知＋（更新時のみ）事前通知→再起動**。
+- 06:20 更新／06:30 通知。通知 cron は status により分岐:
+  - `up-to-date`/`failed` → Discord 通知のみ（再起動しない）。
+  - `updated` → 先に『🔄 <before>→<after> に更新。約15秒後に gateway 再起動』を Discord 送信 → `setsid` でデタッチした `sleep 15 && systemctl --user restart openclaw-gateway.service` を仕込んで終了。**必ず通知が先**。
 
 ## 3. セットアップ手順（実行コマンド）
 
@@ -90,7 +94,7 @@ journalctl --user -u openclaw-autoupdate.service -n 20 --no-pager
 | timer 次回発火 | ✅ 毎週金 06:20 JST |
 | 通知 cron | ✅ 毎週金 06:30 JST 登録 |
 
-> 補足: 初回の素のスクリプト（`openclaw update --yes`）は最新でも gateway を再起動したため、`--no-restart`＋更新時のみ再起動へ改良した。
+> 補足: 初回の素のスクリプト（`openclaw update --yes`）は最新でも gateway を再起動したため、`--no-restart`＋「通知 cron が事前通知後に再起動」へ改良した。
 
 ## 5. 運用・ロールバック
 
@@ -119,4 +123,4 @@ systemctl --user daemon-reload
 | 更新方式 | symlink 切替（native installer） | npm dist ツリー置換 |
 | gateway 内から更新 | 可（無停止） | **不可**（祖先 PID 判定で拒否） |
 | スケジューラ | OpenClaw cron（agentTurn が直接 `claude update`） | **systemd user timer**（gateway 外）＋通知用 OpenClaw cron |
-| gateway 再起動 | 不要 | 更新があった時のみ |
+| gateway 再起動 | 不要 | 更新があった時のみ（**事前 Discord 通知の後**・通知 cron が実施） |
