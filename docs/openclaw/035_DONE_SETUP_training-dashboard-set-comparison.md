@@ -47,7 +47,8 @@
 
 - 線種：個別=実線（太・色別）／avg3=破線／avg5=点線。描画は平均線→個別線の順（個別を前面、直近最前面）。全線の各点に `×回数` を線色で注記（線インデックスで上下振り分け＋`paint-order:stroke` の背景縁取り）。
 - 凡例：色スウォッチ（線種反映）＋ラベル（直近/前回/前々回/平均(3回)/平均(5回)）＋日付（範囲）。
-- Y軸はキリの良い目盛（`niceAxis()`）：**kg＝10kgごとに数値ラベル＋5kgの補助薄線**、lb＝20/25/50lb 基調＋半分の補助線。下限はデータ最小の少し下から。
+- Y軸はキリの良い目盛（`niceAxis()`）：**kg＝10kgごとに数値ラベル＋5kgの補助薄線**、lb＝20/25/50lb 基調＋半分の補助線。下限はデータ最小の少し下から。目盛り線は step ごとだが、目盛り数が多い（(yMax-yMin)/step > 8）時は**数値ラベルを1つ飛ばし**にして密集を回避。
+- フォント／サイズ（2026-06-23 改修）：Y軸数値=14px太字（`on-surface`）、X軸（◯set）=14px太字、単位（kg/lb）=13px太字、×レップ注記=11px。SVG `viewBox` は `460×250`（旧 `720×280`）。`svg{width:100%;height:auto}` のため viewBox を小さくすると**縮小率が下がり、モバイルの狭いカード幅でも数値が実寸で読める**（広い viewBox では font-size を上げても縮小で潰れる問題への対処）。
 
 ## 6. 検証
 
@@ -65,3 +66,12 @@
 ## 8. 切り戻し
 
 - 着手前バックアップ: `~/.openclaw/workspace/.backups/task81-set-comparison-20260622-140118/`（`trainingService.mjs`/`httpRouter.mjs`/`training-dashboard.html`/`tasks.db`）。
+- 軸フォント改修（2026-06-23）の着手前バックアップ: `~/.openclaw/workspace/.backups/task81-axisfont-20260623-173500/training-dashboard.html`。
+
+## 9. 更新履歴
+
+- **2026-06-23（軸ラベル拡大・本人指示）**: 「縦軸 kg の数値（100/120 等）が小さい／全体の見た目を整えて」への対応。`multiLineChart()` のみ改修（追加のみ＝デグレ無し）。
+  - 原因: SVG `viewBox` 幅が 720 と広く、モバイルの狭いカード幅（≈316px）へ縮小描画されるため、font-size を上げても約0.44倍に潰れていた。
+  - 対応: `viewBox` を `460×250` へ縮小して縮小率を改善（モバイルで数値が実寸で約1.6倍）。Y軸数値=14px太字、X軸=14px太字、単位=13px太字、×レップ=11px。目盛り過多時は数値ラベルを間引き。`padL/padR/padT/padB` も viewBox 縮小に合わせ調整。
+  - 検証: ローカル（`127.0.0.1`）でブラウザ実描画を確認（モバイル幅 412px）。Y軸/X軸/単位/×回数すべて明確に可読。回帰なし（他チャート関数は非改変）。
+  - 反映: private リポ `private-openclaw-01`（master）へ `public/training-dashboard.html` を git+token で push、blob sha byte-exact 一致確認済み。
