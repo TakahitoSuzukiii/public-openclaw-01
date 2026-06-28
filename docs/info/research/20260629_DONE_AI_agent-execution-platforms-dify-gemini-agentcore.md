@@ -156,7 +156,34 @@ AWS 主導の **OSS エージェントフレームワーク（SDK）**。Apache 
 
 ---
 
-## 8. 選定の指針（業務改善・効率化・自動化の観点）
+## 8. Anthropic（Claude）の位置づけ — Claude Enterprise ほか
+
+依頼により追記（初版では未収録）。Anthropic の提供は**2つの層**に分けて理解する。本記事の主題（AI実行基盤＝エージェントを組む/動かす基盤）に対応するのは後者だが、依頼の「Claude Enterprise」は前者にあたる。
+
+### 8-1. Claude Enterprise（Claude アプリのエンタープライズ・プラン）
+**位置づけ:** Dify や Bedrock AgentCore のような「エージェントを開発・運用する基盤」ではなく、**Claude アプリ（claude.ai / claude.com）を組織で安全に使うための最上位プラン**。ナレッジワーカー向けの“アプリ層”の製品で、§1 のレイヤー表では Gemini Enterprise app に近い立ち位置。
+
+主な特徴（公開情報ベース）:
+- **セキュリティ／管理:** **SSO（SAML）**、**SCIM** によるユーザー自動プロビジョニング、**ロールベースのアクセス制御**、**監査ログ**、ドメイン管理など、IT 部門向けの統制機能。
+- **データの取り扱い:** 入力・出力など**組織のデータをモデル学習に利用しない**ことを既定とする。データ保持・コンプライアンス（SOC 2 等）に配慮した運用。
+- **拡張コンテキスト:** 一般プランより**大きなコンテキストウィンドウ**と利用枠（発表当初は 500K トークン枠が訴求された）。
+- **コラボレーション:** Projects（プロジェクト単位の文脈共有）、Artifacts、チーム共有など。
+- **ネイティブ連携 / Claude Code:** **GitHub 連携**でリポジトリを参照可能。近年は**Claude Code**（エージェント的コーディング CLI）を含むプランも提供され、開発業務の自動化に踏み込んでいる。
+- **管理コンソール:** 利用状況の可視化、メンバー・権限管理。
+
+**留意:** これは「AIエージェント開発プラットフォーム」ではなく、エンドユーザー向けの統合アシスタント製品。Dify/Gemini Agent Platform/AgentCore と**同じ土俵で比較するものではない**。ただし Claude Code を介した自動化や、後述の API/Agent SDK と組み合わせることで、業務自動化の入口にはなる。プラン詳細・数値・提供範囲は変動が速いため、導入検討時は公式の料金/エンタープライズページで最新確認が必須。
+
+### 8-2. Claude Developer Platform / Agent SDK / Managed Agents（本記事の主題に対応する層）
+本記事のテーマ（§1 の開発層・運用層）に**直接対応する Anthropic の offering** は、Claude Enterprise ではなくこちら:
+- **Claude Developer Platform（API / Messages API）:** ツール使用、MCP、構造化出力、コード実行などエージェントの土台。**MCP の提唱元は Anthropic**。
+- **Claude Agent SDK:** エージェントを“組む”開発フレームワーク。→ **Strands / LangGraph / CrewAI と同カテゴリ（開発層）**。
+- **Managed Agents（ベータ）:** Anthropic がエージェントループとツール実行コンテナ（セッション）を**ホスト**するマネージドな実行基盤（環境・セッション・イベントストリーム・スキル・MCP・メモリ・スケジュール実行）。→ **Bedrock AgentCore / Gemini Agent Platform と同カテゴリ（運用層）**。
+
+要するに「Anthropic で Dify/Gemini/AgentCore に相当するもの」を探すなら、答えは Claude Enterprise ではなく **Claude Agent SDK（開発層）＋ Managed Agents（運用層）** になる。
+
+---
+
+## 9. 選定の指針（業務改善・効率化・自動化の観点）
 
 | もし… | 有力候補 | 理由 |
 |---|---|---|
@@ -171,7 +198,7 @@ AWS 主導の **OSS エージェントフレームワーク（SDK）**。Apache 
 
 ---
 
-## 9. まとめ
+## 10. まとめ
 
 - 「AI実行基盤」は**層で理解する**のが最短ルート。Dify・Gemini Enterprise は統合型、AgentCore は運用層、Strands は開発層。
 - 依頼の問い（Strands / AgentCore は Dify・Gemini の類似 or 競合か）の答えは、**Strands＝開発フレームワークの競合群、AgentCore＝運用層で一部競合**。両者（Strands＋AgentCore）は縦に積む補完関係であり、統合型の Dify / Gemini とは“設計思想の違い”で対比される。
@@ -179,7 +206,7 @@ AWS 主導の **OSS エージェントフレームワーク（SDK）**。Apache 
 
 ---
 
-## 10. 出典（公式一次情報・参照日 2026-06-29）
+## 11. 出典（公式一次情報・参照日 2026-06-29）
 
 - Dify 公式サイト: https://dify.ai/
 - Dify ドキュメント（Introduction）: https://docs.dify.ai/
@@ -191,6 +218,9 @@ AWS 主導の **OSS エージェントフレームワーク（SDK）**。Apache 
 - Amazon Bedrock AgentCore（開発者ガイド / What is）: https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html
 - Strands Agents（公式サイト）: https://strandsagents.com/
 - Strands Agents（GitHub SDK）: https://github.com/strands-agents
+- Claude Enterprise / 料金（Anthropic）: https://www.anthropic.com/pricing ／ https://claude.com/pricing
+- Claude（プラットフォーム/Developer Platform・ドキュメント）: https://platform.claude.com/docs
+- Claude Code: https://www.anthropic.com/claude-code
 - 参考（競合）: LangGraph https://www.langchain.com/langgraph ／ CrewAI https://www.crewai.com/ ／ LlamaIndex https://www.llamaindex.ai/ ／ Microsoft Copilot Studio https://www.microsoft.com/microsoft-copilot/microsoft-copilot-studio ／ Vertex AI Agent Builder https://cloud.google.com/products/agent-builder ／ OpenAI Agents SDK https://platform.openai.com/docs/guides/agents ／ n8n https://n8n.io/ ／ Flowise https://flowiseai.com/
 
 > 注: 競合節の各製品の細部仕様は本調査では一次確認まで行っていない項目を含む（普及済みの一般情報に基づく）。導入検討時は各公式ドキュメントの最新版で再確認すること。
