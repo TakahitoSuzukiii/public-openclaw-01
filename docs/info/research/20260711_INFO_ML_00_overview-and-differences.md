@@ -22,10 +22,10 @@
 
 ```mermaid
 flowchart TB
-  subgraph AI[人工知能 AI]
-    subgraph ML[機械学習 Machine Learning]
-      subgraph DL[深層学習 Deep Learning]
-        NN[多層ニューラルネットワーク]
+  subgraph AI["人工知能 AI"]
+    subgraph ML["機械学習 Machine Learning"]
+      subgraph DL["深層学習 Deep Learning"]
+        NN["多層ニューラルネットワーク"]
       end
     end
   end
@@ -47,9 +47,9 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-  A["① 学習の枠組み軸（どんな信号で学ぶか）\n教師あり / 教師なし / 強化学習"]
-  B["② 実現手段軸（何で関数を表すか）\n線形モデル / 決定木 / 深層学習(NN)"]
-  C["③ 目的軸（何を出力するか）\n識別・予測 / 生成(生成AI)"]
+  A["① 学習の枠組み軸（どんな信号で学ぶか）<br/>教師あり / 教師なし / 強化学習"]
+  B["② 実現手段軸（何で関数を表すか）<br/>線形モデル / 決定木 / 深層学習（NN）"]
+  C["③ 目的軸（何を出力するか）<br/>識別・予測 / 生成（生成AI）"]
   A --- B --- C
 ```
 
@@ -62,13 +62,13 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-  ML[機械学習]
-  RL[強化学習\n＝MLの学習分類の1つ]
-  DL[深層学習\n＝MLの実現手段の1つ]
-  GEN[生成AI\n＝出力目的による分類・多くはDLで実現]
-  LLM[LLM 大規模言語モデル\n＝生成AIのうち言語特化]
-  CLAUDE[Claude / GPT / Gemini …\n＝LLMの具体的な製品・実装]
-  MODELS[Opus / Sonnet / Haiku / Fable / Mythos\n＝Claude製品内のモデル階級]
+  ML["機械学習"]
+  RL["強化学習<br/>＝MLの学習分類の1つ"]
+  DL["深層学習<br/>＝MLの実現手段の1つ"]
+  GEN["生成AI<br/>＝出力目的による分類・多くはDLで実現"]
+  LLM["LLM 大規模言語モデル<br/>＝生成AIのうち言語特化"]
+  CLAUDE["Claude / GPT / Gemini …<br/>＝LLMの具体的な製品・実装"]
+  MODELS["Opus / Sonnet / Haiku / Fable / Mythos<br/>＝Claude製品内のモデル階級"]
 
   ML --> RL
   ML --> DL
