@@ -20,15 +20,11 @@
 
 3つは入れ子（包含）の関係。まずここを押さえる。
 
-```mermaid
-flowchart TB
-  subgraph AI["人工知能 AI"]
-    subgraph ML["機械学習 Machine Learning"]
-      subgraph DL["深層学習 Deep Learning"]
-        NN["多層ニューラルネットワーク"]
-      end
-    end
-  end
+```text
+人工知能 AI（最も広い概念）
+└─ 機械学習 Machine Learning
+   └─ 深層学習 Deep Learning
+      └─ 多層ニューラルネットワーク
 ```
 
 | 用語 | ざっくり定義 | 例 |
@@ -45,12 +41,18 @@ flowchart TB
 
 ### 2.1 3つの軸で捉える
 
-```mermaid
-flowchart TB
-  A["① 学習の枠組み軸（どんな信号で学ぶか）<br/>教師あり / 教師なし / 強化学習"]
-  B["② 実現手段軸（何で関数を表すか）<br/>線形モデル / 決定木 / 深層学習（NN）"]
-  C["③ 目的軸（何を出力するか）<br/>識別・予測 / 生成（生成AI）"]
-  A --- B --- C
+```text
+① 学習の枠組み軸（どんな信号で学ぶか）
+    ├ 教師あり
+    ├ 教師なし
+    └ 強化学習
+② 実現手段軸（何で関数を表すか）
+    ├ 線形モデル
+    ├ 決定木
+    └ 深層学習（ニューラルネット）
+③ 目的軸（何を出力するか）
+    ├ 識別・予測
+    └ 生成（生成AI）
 ```
 
 - **強化学習**は①の軸（学習の"やり方"の一種）。
@@ -60,22 +62,14 @@ flowchart TB
 
 ### 2.2 階層と包含関係（重要）
 
-```mermaid
-flowchart TB
-  ML["機械学習"]
-  RL["強化学習<br/>＝MLの学習分類の1つ"]
-  DL["深層学習<br/>＝MLの実現手段の1つ"]
-  GEN["生成AI<br/>＝出力目的による分類・多くはDLで実現"]
-  LLM["LLM 大規模言語モデル<br/>＝生成AIのうち言語特化"]
-  CLAUDE["Claude / GPT / Gemini …<br/>＝LLMの具体的な製品・実装"]
-  MODELS["Opus / Sonnet / Haiku / Fable / Mythos<br/>＝Claude製品内のモデル階級"]
-
-  ML --> RL
-  ML --> DL
-  DL --> GEN
-  GEN --> LLM
-  LLM --> CLAUDE
-  CLAUDE --> MODELS
+```text
+機械学習（ML）
+├─ 強化学習 ………… MLの「学習分類」の1つ（報酬で学ぶ）
+└─ 深層学習 ………… MLの「実現手段」の1つ（多層ニューラルネット）
+      └─ 生成AI ……… 出力目的による分類（多くは深層学習で実現）
+            └─ LLM（大規模言語モデル） ……… 生成AIのうち言語特化
+                  └─ Claude / GPT / Gemini … …… LLMの具体的な製品・実装
+                        └─ Opus / Sonnet / Haiku / Fable / Mythos … Claude内のモデル階級
 ```
 
 ### 2.3 一覧で対比
