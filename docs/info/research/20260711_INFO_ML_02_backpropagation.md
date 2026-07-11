@@ -26,8 +26,8 @@ w ← w − η · (∂L/∂w)
 
 ```mermaid
 flowchart LR
-  I[入力] -->|① 順伝播 forward\n予測を計算| O[出力→損失を計算]
-  O -->|② 逆伝播 backward\n勾配を後ろから配分| I
+  I["入力"] -->|"① 順伝播 forward<br/>予測を計算"| O["出力→損失を計算"]
+  O -->|"② 逆伝播 backward<br/>勾配を後ろから配分"| I
 ```
 
 ---
