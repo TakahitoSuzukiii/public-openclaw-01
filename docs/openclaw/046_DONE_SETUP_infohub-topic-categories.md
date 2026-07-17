@@ -14,7 +14,10 @@
 
 | カテゴリ key | 表示 | 対象 TOPIC コード |
 |---|---|---|
-| techresearch | 🔬 技術リサーチ | 上記以外の全 TOPIC（RESEARCH/ARCH/AWS/AWSAUTO/CLAUDEAUTO/AUTODOC/MCP/PLAYWRIGHT/SRE/AI/AIGOV/TEMPLATES/RESOURCES 等・**未登録TOPICの既定**） |
+| techresearch | 🔬 技術リサーチ | 下記に該当しない技術 TOPIC（TECH/RESEARCH/MCP/PLAYWRIGHT/SRE/AUTODOC/TEMPLATES/RESOURCES 等・**未登録TOPICの既定**） |
+| design | 📐 デザイン・設計 | DESIGN, ARCH |
+| cloud | ☁️ クラウド・インフラ | CLOUD, INFRA, AWS, AWSAUTO |
+| genai | 🧠 生成AI | GENAI, LLM, CLAUDE, AI, AIGOV, CLAUDEAUTO |
 | ml | 🤖 機械学習 | ML |
 | health | 🩺 ヘルスケア | HEALTH |
 | finance | 💰 金融 | FINTECH, MONEY, FINANCE |
@@ -22,10 +25,11 @@
 | other | 🗂 その他 | LIFE, MISC, OTHER |
 
 - **ソート**: 細分カテゴリはフラットな**ファイル名降順（＝日付降順・最新が上）**。news/security/openclaw はサブディレクトリ見出しを維持し、各群内で最新が上。
+- **技術リサーチ細分化（2026-07-17 追加）**: 従来 🔬 技術リサーチに集約していた技術記事を、`design`（設計・アーキ）／`cloud`（クラウド・インフラ）／`genai`（生成AI）の3カテゴリへ TOPIC コードで自動振り分け。未登録 TOPIC は従来どおり技術リサーチに残す（追加のみ・デグレ無し）。振り分け実績: design=ARCH×3 / cloud=AWS・AWSAUTO×4 / genai=CLAUDEAUTO・AI・AIGOV×7 / 技術リサーチ残置×13。
 
 ## 3. 実装（`public/info.html` のみ）
 
-- `CATS` を9カテゴリへ拡張（key/emoji/label/ja/desc、grouped フラグ）。
+- `CATS` を9カテゴリへ拡張（key/emoji/label/ja/desc、grouped フラグ）。2026-07-17 に design/cloud/genai を加え計12カテゴリ。
 - 追加関数：`topicOf(path)`（TOPIC 抽出）／`TOPIC_CAT`（TOPIC→カテゴリ表）／`categorize(path)`（記事→カテゴリ key）。
 - `showHub` の件数集計、`showCategory` のフィルタ/描画、`catKeyForPath`（記事本文の戻り先）を `categorize()` ベースへ変更。ルーティング/API/バックエンドは無変更。
 
@@ -41,6 +45,7 @@
 - 分類シミュレーション（実ツリーに `categorize()` 相当を適用）：health=タンパク質／finance=X Money／ml=機械学習3件／selfdev=古典3件／other=居酒屋、技術系は techresearch、news/security/openclaw 温存。最新が上を確認。
 - ブラウザ（Playwright headless）で `/info` ハブ（9カテゴリ＋レポート・件数一致）と `#cat=health`（対象記事表示）を確認。
 - 着手前バックアップ：`~/.openclaw/workspace/.backups/task-infopage-categories-<ts>/info.html`。
+- **技術リサーチ細分化（2026-07-17）の検証**: inline JS `node --check` OK ／ ライブ回帰 `/info`・`/api/info/tree` 200 ／ 実ツリーに `categorize()` 適用で design=3・cloud=4・genai=7・techresearch=13（承認表と一致）・既存カテゴリ件数温存（デグレ無し）／ Playwright headless で `#cat=genai` の一覧描画・パンくず・コンソールエラー0件を確認。着手前バックアップ：`.backups/task-infopage-techsubcat2-<ts>/info.html`。
 
 ## 6. 完了処理
 
