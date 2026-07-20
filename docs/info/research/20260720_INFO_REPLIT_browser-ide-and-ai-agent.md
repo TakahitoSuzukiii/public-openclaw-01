@@ -138,6 +138,76 @@ flowchart LR
 
 ---
 
+## 9B. 競合・類似サービス徹底比較（「ブラウザで動くIDE」観点）
+
+> 2026年のクラウド/ブラウザ開発環境は、大きく**4分類**に整理できる。Replit は「フルIDE型クラウド」でありながら「AIファースト・ビルダー」も兼ねる**ハイブリッド**な立ち位置。
+
+```mermaid
+flowchart TD
+    ROOT["ブラウザで動く開発環境 (2026)"]
+    ROOT --> C1["① フルIDE型クラウド<br/>(VS Code級の完全環境)"]
+    ROOT --> C2["② ブラウザネイティブ・サンドボックス<br/>(サーバ無し/WASMで実行)"]
+    ROOT --> C3["③ AIファースト・ビルダー<br/>(プロンプト→アプリ)"]
+    ROOT --> C4["④ OSS/セルフホスト"]
+    C1 --> C1a["GitHub Codespaces / Gitpod Flex<br/>Replit / Cursor Cloud"]
+    C2 --> C2a["StackBlitz(WebContainer)<br/>CodeSandbox / val.town"]
+    C3 --> C3a["Bolt.new / v0 / Lovable<br/>Magic Patterns / (Replit)"]
+    C4 --> C4a["Coder / code-server<br/>Eclipse Che・Theia / Daytona"]
+```
+
+### ① フルIDE型クラウド（本格開発向け・Replitの主戦場）
+- **GitHub Codespaces**: **VS Code のブラウザ版**を任意リポジトリから起動（devcontainer 仕様で環境を宣言）。**GitHub と密結合**（PR/Issue/Actions）、Copilot 統合。**プロの実務では最有力の定番**。コンピュート時間で従量課金。
+- **Gitpod（Gitpod Flex）**: リポジトリから**使い捨て(エフェメラル)環境**を自動生成。CI 的な再現性・セルフホスト対応。
+- **Cursor Cloud**: AIエディタ Cursor のクラウド実行版（ローカル版 Cursor はブラウザではない点に注意）。
+- **Replit**: 本ドキュメントの主役。環境ゼロ＋AI Agent＋即デプロイの一体型。
+
+### ② ブラウザネイティブ・サンドボックス（サーバレスで軽快）
+- **StackBlitz**: **WebContainer**（WASMで Node.js を**ブラウザ内で直接実行**）。サーバ不要で起動が非常に速く、フロントエンド/Node のプロトタイプ・ドキュメント埋め込みに強い。
+- **CodeSandbox**: フロントエンド試作の定番。近年は**クラウドVM**実行も追加し守備範囲拡大。
+- **val.town**: 小さな関数/スクリプトをブラウザで書いて即デプロイ。
+
+### ③ AIファースト・ビルダー（プロンプト→アプリ／Replitと競合）
+- **Bolt.new（StackBlitz）**: 自然言語からフルスタックWebアプリを生成し、その場で実行（WebContainer基盤）。
+- **v0（Vercel）**: UI/フロントを生成、Vercelへデプロイ。
+- **Lovable / Magic Patterns**: プロンプトからアプリ/UIを生成する"vibe coding"系。
+- → Replit はここにも属し、**「IDE＋実行＋デプロイまで所有」**する点で単なるUI生成系と差別化。
+
+### ④ OSS・セルフホスト（自前運用・ロックイン回避）
+- **Coder / code-server**: VS Code を自社サーバ/クラウドでホスト。企業のセキュリティ要件に対応。
+- **Eclipse Che / Theia**: ブラウザIDEを作るためのOSSフレームワーク（Theia は VS Code 互換基盤）。
+- **Daytona / DevPod**: 開発環境をコード化して任意基盤で再現。
+
+### 軽量エディタ（"ちょい書き"・共有向け）
+- **vscode.dev / github.dev**: **ブラウザ版 VS Code**。github.dev は GitHub のリポジトリ画面で **`.` キー**を押すと起動。**コンピュート/ターミナルは無く編集中心**（軽量閲覧・小修正向き）。
+- **CodePen / JSFiddle / JSBin**: フロントの**スニペット共有**に特化（フルIDEではない）。
+
+### 主要サービス早見表（ブラウザIDE観点）
+
+| サービス | 分類 | 実行方式 | AI | 特徴/強み |
+|---|---|---|---|---|
+| **Replit** | ①＋③ | クラウドコンテナ | ◎ Agent | 環境ゼロ〜デプロイ一体。非エンジニアもOK |
+| **GitHub Codespaces** | ① | クラウドVM(devcontainer) | ○ Copilot | VS Code品質＋GitHub密結合。実務の定番 |
+| **Gitpod Flex** | ① | クラウド/セルフホスト | ○ | 使い捨て環境・再現性・自前運用可 |
+| **Firebase Studio**（旧 Project IDX） | ①＋③ | クラウド(VS Codeベース) | ◎ Gemini | Google製・agentic・full-stack/モバイル |
+| **StackBlitz** | ② | **WebContainer(WASM)** | ○ | サーバ不要で超高速。Bolt.new の基盤 |
+| **CodeSandbox** | ② | ブラウザ＋クラウドVM | ○ | フロント試作の定番 |
+| **vscode.dev / github.dev** | 軽量 | 実行なし(編集中心) | △ | ブラウザVS Code。`.`キーで起動 |
+| **Coder / Che・Theia** | ④ | セルフホスト | 任意 | OSS・ロックイン回避・企業向け |
+
+### ⚠️ 撤退・終了に注意（2024〜2025）
+- **AWS Cloud9**: **新規利用の受付を終了**（実質フェードアウト。新規採用は非推奨）。
+- **Glitch**: サービス終了。**JetBrains Space** も終了。
+- **Google Project IDX**: **Firebase Studio に統合・改称**（IDX 単体としては終了扱い）。
+- → 「ブラウザIDEは入れ替わりが速い」ため、**移行性(エクスポート/OSS互換)** を選定時に重視するとよい。
+
+### Replit を選ぶ/選ばない目安
+- **Replit 向き**: セットアップを避けたい／**AIに丸ごと作らせたい**／非エンジニアが形にする／プロトタイプ〜小規模公開まで最短で。
+- **Codespaces / Gitpod 向き**: **既存Gitワークフローの本格開発**／VS Code資産・拡張を活かす／チームの標準環境。
+- **StackBlitz / CodeSandbox 向き**: **フロントエンドの高速試作**・ドキュメント埋め込み・共有デモ。
+- **Coder / Che 向き**: **セルフホストでロックイン回避**・厳格なセキュリティ要件。
+
+---
+
 ## 10. 始め方（最初の一歩）
 
 1. replit.com でサインアップ（無料 Starter）。
