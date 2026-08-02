@@ -168,7 +168,7 @@ stateDiagram-v2
     queued --> awaiting_approval: 差し戻し
     awaiting_approval --> on_hold: 保留
     on_hold --> awaiting_approval: 再開
-    note right of awaiting_approval: 廃止: intake / processing / reviewing
+    note right of awaiting_approval: 廃止 intake, processing, reviewing
 ```
 
 - ステータスは `awaiting_approval / queued(=LLM実行待ち) / executing / awaiting_completion / on_hold / cancelled / done` の7種に集約。`stage` 列は後方互換で残すが常に `exec`。

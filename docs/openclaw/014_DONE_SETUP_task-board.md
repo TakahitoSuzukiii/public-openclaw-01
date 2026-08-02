@@ -51,7 +51,7 @@ flowchart TD
     U["あなた / Discord"] -->|スラッシュコマンド create-apt| SKILL["create-apt スキル"]
     SKILL -->|taskctl add --json-file<br/>新規=承認待ちで登録| DB[("SQLite tasks.db")]
     SCHED["Gateway cron スケジューラ<br/>JST 7:10 / 11:10 / 17:10"] --> POLL["cron taskboard-poller<br/>isolated エージェント<br/>exec 専用"]
-    POLL -->|queued(承認済)を取得 → 実処理| DB
+    POLL -->|"queued(承認済)を取得 → 実処理"| DB
     POLL -->|実行時のみ Discord 通知| U
     DB --> SRV["server.mjs<br/>node:http 127.0.0.1:18790<br/>/ =ホーム /dashboard =ボード"]
     SRV --- SERVE["tailscale serve<br/>HTTPS tailnet限定"]
