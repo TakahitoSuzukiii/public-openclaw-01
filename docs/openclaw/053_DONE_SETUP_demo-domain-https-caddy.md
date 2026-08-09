@@ -137,6 +137,26 @@ sudo journalctl -u caddy -n 60 --no-pager    # "certificate obtained successfull
 - **SSH 安全**: 本手順は ENI/ネットワーク非干渉。SSH は `22/<your-ip>/32`（AWS）＋ tailscale の2系統で確保。**副 ENI のアタッチは行わない**（過去に SSH 断の原因）。
 - **owner アクセス**: tailscale serve（ヘッダ無し）で従来どおり全機能（読み書き）。
 
+## 7. 再起動耐性（boot persistence・実測）
+
+サーバ再起動後も SSH 接続・各サービスの自動起動が成立することを、設定精査と**再起動の実測**で確認した。
+
+- **自動起動(enabled)**: `sshd` / `tailscaled` / `caddy` / `openclaw-taskboard`(user) / `openclaw-gateway`(user)。
+- **user サービスの起動保証**: `loginctl` の **`Linger=yes`** により、ログイン無しでも起動時に user サービス（タスクボード等）が自動起動。
+- **Caddy の bind タイミング対策**: `Requires`/`After=network-online.target` ＋ `systemd-networkd-wait-online=enabled` で、ENI に IP が付与されてから起動。加えて drop-in で **`Restart=on-failure` / `RestartSec=5s`** を付与し、万一の起動レースでも自動再試行。
+- **固定要素**: primary private IP・Elastic IP は再起動をまたいで不変（DNS も継続）。
+- **SSH は2系統**: `22/<your-ip>`（AWS SG）＋ tailscale。片方が不通でも締め出されない。**副 ENI のアタッチは行わない**（過去に SSH 断を誘発した操作）。
+
+### 再起動 実測（結果）
+
+| 項目 | 結果 |
+|---|---|
+| uptime | 再起動を確認 ✅ |
+| sshd / tailscaled / caddy / taskboard | すべて active＋enabled ✅ |
+| 公開HTTPS `GET /` | 200・`ssl_verify=0`・HTTP/2 ✅ |
+| 参照専用 `/chat` / `POST` | 403 / 405 ✅ |
+| `caddy NRestarts` | **0（一発でクリーン起動）** ✅ |
+
 ## Author and Ownership / 著作権と所属について
 
 This project was created as a personal initiative and is not connected to any organization or group.

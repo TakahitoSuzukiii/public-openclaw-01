@@ -1,59 +1,90 @@
-# public-openclaw-01
+# NEXUS — AI アシスタント × タスクボード（個人開発ポートフォリオ）
 
-OpenClaw 実行プラットフォーム関連の公開ドキュメント・動作確認資料を集めたリポジトリです。
+**NEXUS** は、[OpenClaw](https://openclaw.ai/) と Claude を土台に個人開発した AI アシスタントです。Discord チャットから指示すると、タスク管理・調査・ドキュメント生成・サーバ運用などを実行します。本リポジトリは、その公開ドキュメントと、Web ダッシュボード（タスクボード）のポートフォリオ資料をまとめたものです。
 
-- **対象:** AL2023（Amazon Linux 2023）on EC2 上で稼働する OpenClaw + Claude Code + MCP サーバ群
-- **方針:** ホスト名・内部 IP・OS ユーザ名等の固有情報は全て placeholder（`<your-user>` 等）に伏字化
-- **マスター:** ローカル `/opt/docs/openclaw/` 配下（本リポジトリはミラー）
+---
+
+## 🌐 ライブデモ
+
+- **URL: https://demo.demosites.click/**
+- **参照専用（閲覧のみ）** のデモサイトです。入力フォーム・書き込み操作は無効化されており、どなたでも安全にご覧いただけます。
+- ログイン不要。上部ナビゲーションから各画面を開くだけで動作を確認できます。
+
+> ⚠️ **サーバはコスト最適化のため常時起動していません（必要なときだけ起動する運用です）。**
+> ポートフォリオとしてサイトをご覧になりたい場合は、お手数ですが **ご案内元（本人）までご連絡ください**。稼働を開始します。
+> アクセスして表示されない場合は、サーバが停止中の可能性があります。
+
+### 画面の見どころ（はじめての方へ）
+
+| 画面 | 内容 |
+|---|---|
+| 🏠 ホーム | 天気・サーバ / システム状況の概況ダッシュボード |
+| 🔗 タスクボード | チャット駆動のタスク管理。カードのステータス・優先度・履歴を可視化（デモはサンプルタスクを表示） |
+| 📖 ドキュメント | 技術リサーチ／構築手順記事のビューア（Mermaid 図もその場で描画） |
+| 🏋 トレーニング | トレーニング記録の分析ダッシュボード（種目別・部位別・推移） |
+| 🩺 ヘルスケア | ボディメイク（体組成）記録と推移 |
+
+### 技術メモ（このデモで見せているもの）
+
+- **正式 HTTPS**: 独自ドメイン ＋ Let's Encrypt の正式証明書（🔒）。リバースプロキシは Caddy。
+- **参照専用の作り込み**: 公開面はサーバ側で書き込み（非 GET）を一律遮断＋UI 側でも入力を無効化。見た目はそのままに「壊せない」デモを実現。
+- **軽量アーキテクチャ**: バックエンドは npm 依存ゼロ（Node 標準のみ）、4 層構成（interface → application → domain → repository/infra）。「追加のみ＝デグレ無し」を原則に段階的に機能拡張。
+- **運用の自動化**: 週次のトレンド/セキュリティ監視、障害時フォールバック通知などを常駐タスクで自動化。
+- **再起動耐性**: `systemd` による自動起動・自動更新（TLS 証明書は無人更新）。構築の詳細は下記ドキュメント参照。
+
+---
 
 ## 🏗 アーキテクチャ
 
 ```mermaid
 flowchart TD
     subgraph client["💻 Client"]
-        user["鈴木さん (Discord)"]
+        user["オーナー (Discord)"]
     end
 
     subgraph host["🖥️ AL2023 Server (EC2)"]
         discord_ch["Discord Channel"]
         openclaw["OpenClaw Gateway<br/>127.0.0.1:18789"]
-        nexus["NEXUS Agent<br/>(claude-opus-4-7)"]
+        nexus["NEXUS Agent<br/>(Claude Opus)"]
         claude_cli["Claude Code CLI"]
+        caddy["Caddy (TLS 終端 / 参照専用ゲート)<br/>Let's Encrypt"]
+        board["Task Board<br/>127.0.0.1:18790"]
     end
 
     subgraph mcp["🔌 MCP Servers"]
-        aws_mcp["aws-mcp<br/>uvx mcp-proxy-for-aws<br/>(read-only)"]
-        github_mcp["github-mcp<br/>go binary, stdio<br/>(PAT auth)"]
-        drawio_mcp["drawio-mcp<br/>streamable-http<br/>mcp.draw.io"]
-        playwright_mcp["playwright-mcp<br/>npx, headless<br/>(--browser chrome)"]
+        aws_mcp["aws-mcp<br/>(read-only)"]
+        github_mcp["github-mcp<br/>(PAT auth)"]
+        drawio_mcp["drawio-mcp"]
+        playwright_mcp["playwright-mcp<br/>(headless chrome)"]
     end
 
     subgraph ext["🌐 External"]
+        visitor["公開デモ閲覧者"]
         aws_api["AWS APIs"]
         github_api["GitHub API"]
-        drawio_api["draw.io Service"]
     end
 
-    user --> discord_ch
-    discord_ch --> openclaw
-    openclaw --> nexus
+    user --> discord_ch --> openclaw --> nexus
     nexus --> claude_cli
-    nexus --> aws_mcp
-    nexus --> github_mcp
+    nexus --> aws_mcp --> aws_api
+    nexus --> github_mcp --> github_api
     nexus --> drawio_mcp
     nexus --> playwright_mcp
-    aws_mcp --> aws_api
-    github_mcp --> github_api
-    drawio_mcp --> drawio_api
+    nexus --> board
+    visitor -->|"https（参照専用）"| caddy --> board
 ```
 
-## 📁 ディレクトリ構成
+---
+
+## 📁 リポジトリ構成
 
 | パス | 用途 |
 |---|---|
 | `docs/openclaw/` | OpenClaw のセットアップ・設定・運用手順書（連番管理） |
 | `docs/info/` | 調査・ニュース・セキュリティ等の情報ノート（`research` / `news` / `security`） |
 | `tests/` | 動作確認・実験・スクラッチ的な成果物 |
+
+> **方針:** ホスト名・内部 IP・OS ユーザ名等の固有情報は全て placeholder（`<your-user>` 等）に伏字化。マスターはローカル `/opt/docs/openclaw/`（本リポジトリはミラー）。
 
 ### 命名規則
 
@@ -62,56 +93,26 @@ flowchart TD
 - **`docs/info/`**: `YYYYMMDD_STATUS_TOPIC_title.md`
   - STATUS = `INFO` / `WIP` / `DONE` / `TODO`（security は `OPEN` / `FIXED` も可）
 
-### 収録ドキュメント
+### 主な構築ドキュメント（抜粋）
 
-#### docs/openclaw/（セットアップ・運用手順）
+> 構築ドキュメントは継続的に追加しています（現在 **001〜053**）。全件は [`docs/openclaw/`](docs/openclaw/) を参照してください。
 
 | # | ドキュメント | 概要 |
 |---|---|---|
-| 001 | [server-initial-setup](docs/openclaw/001_DONE_SETUP_server-initial-setup.md) | AL2023 + EC2 でのサーバ初期構築（ユーザ / SSH / Node.js / Swap / Claude Code / OpenClaw 導入） |
+| 001 | [server-initial-setup](docs/openclaw/001_DONE_SETUP_server-initial-setup.md) | AL2023 + EC2 のサーバ初期構築（ユーザ / SSH / Node.js / Swap / Claude Code / OpenClaw） |
 | 002 | [mcp-setup-guide](docs/openclaw/002_DONE_SETUP_mcp-setup-guide.md) | MCP サーバ群のセットアップ手順 |
-| 003 | [slash-commands-cheatsheet](docs/openclaw/003_INFO_REF_slash-commands-cheatsheet.md) | スラッシュコマンド早見表 |
-| 004 | [skills-cheatsheet](docs/openclaw/004_INFO_REF_skills-cheatsheet.md) | スキル早見表 |
-| 005 | [workspace-tuning-guide](docs/openclaw/005_DONE_GUIDE_workspace-tuning-guide.md) | ワークスペース調整ガイド |
-| 006 | [playwright-mcp-setup](docs/openclaw/006_DONE_SETUP_playwright-mcp-setup.md) | playwright-mcp の設定 |
-| 007 | [playwright-browser-setup](docs/openclaw/007_DONE_SETUP_playwright-browser-setup.md) | ブラウザ依存ライブラリ／Google Chrome 導入（ヘッドレス） |
-| 008 | [security-remote-access](docs/openclaw/008_INFO_SEC_security-remote-access.md) | リモートアクセスのセキュリティ検討 |
-| 009 | [weekly-github-trending-task](docs/openclaw/009_DONE_SETUP_weekly-github-trending-task.md) | 週次 GitHub トレンド記事タスクの構築手順 |
-| 010 | [gemini-fallback](docs/openclaw/010_DONE_SETUP_gemini-fallback.md) | Claude 障害時に Gemini（無料枠）へ自動フォールバックする構成の構築手順 |
-| 011 | [fallback-notify](docs/openclaw/011_DONE_SETUP_fallback-notify.md) | Claude→fallback 切替の発生を Discord へ即時通知する常駐サービスの構築手順 |
-| 012 | [al2023-security-task](docs/openclaw/012_DONE_SETUP_al2023-security-task.md) | AL2023 セキュリティアドバイザリを日次監視し docs/info/security/al2023 へ要約記事を公開するタスクの構築手順 |
+| 012 | [al2023-security-task](docs/openclaw/012_DONE_SETUP_al2023-security-task.md) | AL2023 セキュリティを日次監視し要約記事を公開するタスク |
+| 051 | [demo-exposure-hardening](docs/openclaw/051_DONE_SEC_demo-exposure-hardening.md) | 公開デモの個人情報露出ハードニング（地点名マスク等） |
+| 052 | [demo-read-only-redesign](docs/openclaw/052_DONE_SETUP_demo-read-only-redesign.md) | 公開デモを「参照専用サイト」へ再設計（書き込み無効化） |
+| 053 | [demo-domain-https-caddy](docs/openclaw/053_DONE_SETUP_demo-domain-https-caddy.md) | 独自ドメイン ＋ Let's Encrypt 正式 HTTPS 化（Caddy 導入・再起動耐性） |
 
-#### docs/info/news/（情報記事）
-
-| 日付 | ドキュメント | 概要 |
-|---|---|---|
-| 2026-06-07 | [system-design-primer](docs/info/news/20260607_INFO_SYSDESIGN_system-design-primer.md) | 大規模システム設計の定番学習リポジトリ |
-| 2026-06-07 | [public-apis](docs/info/news/20260607_INFO_API_public-apis.md) | 無料 API カタログ |
-| 2026-06-07 | [generative-ai-for-beginners](docs/info/news/20260607_INFO_GENAI_generative-ai-for-beginners.md) | Microsoft 製 生成AI入門 21レッスン |
-| 2026-06-07 | [dify](docs/info/news/20260607_INFO_AGENT_dify.md) | AIエージェント／LLMアプリ開発基盤 |
-| 2026-06-07 | [ollama](docs/info/news/20260607_INFO_LLM_ollama.md) | ローカル LLM 実行ツール |
-| 2026-06-07 | [markitdown](docs/info/news/20260607_INFO_TOOL_markitdown.md) | ファイル→Markdown 変換ツール |
-| 2026-06-07 | [claude-code](docs/info/news/20260607_INFO_CLAUDE_claude-code.md) | ターミナル常駐のエージェント型コーディングツール |
-
-> `docs/info/news/` は毎週土曜 06:30 JST の自動タスクで追記されます（構築手順は 009 を参照）。
-
-#### docs/info/security/al2023/（AL2023 セキュリティ）
-
-| 日付 | ドキュメント | 概要 |
-|---|---|---|
-| 2026-06-07 | [al2023-security（Critical 棚卸し・初回）](docs/info/security/al2023/20260607_INFO_ALAS_al2023-security.md) | 現時点で Critical の全12件（lasso/.NET/NVIDIA/expat 他）の棚卸し |
-
-> `docs/info/security/al2023/` は毎日 06:10 JST の自動タスクで追記されます（AL2023 の新規 Critical/Important のみ。構築手順は 012 を参照）。
-
-#### tests/（動作確認）
-
-- [mcp-architecture-test.md](tests/mcp-architecture-test.md) — drawio-mcp 動作確認時の構成図と検証ログ
-- [mcp-architecture-test.mmd](tests/mcp-architecture-test.mmd) — 上記の Mermaid 原本
+---
 
 ## 🔗 関連
 
 - [Claude Code 公式ドキュメント (ja)](https://code.claude.com/docs/ja/quickstart)
 - [OpenClaw 公式](https://openclaw.ai/)
+- [Caddy 公式](https://caddyserver.com/docs/)
 - [AL2023 リリースノート](https://docs.aws.amazon.com/linux/al2023/release-notes/)
 
 ## Author and Ownership / 著作権と所属について
